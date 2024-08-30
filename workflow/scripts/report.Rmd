@@ -26,7 +26,7 @@ For more information on the pipeline, please visit [this page](https://github.co
 
 # Statistics
 
-The following tables summarize the number of sequences at each step of the pipeline.\\
+The following tables summarize the number of sequences at each step of the pipeline.
 
 good ali = alignments with score > 40; bad ali = alignments with score <= 40; demultiplexed = sequences assigned to one or several samples (2 errors allowed on primers, 0 on barcodes), unassigned = sequences unassigned to a sample.
 
