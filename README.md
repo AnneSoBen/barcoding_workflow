@@ -97,7 +97,7 @@ The repository contains five folders:
 
 Download/copy your data in the `resources/` folder. Three files are required:
 - forward and reverse fastq files
-- the corresponding ngsfilter file
+- the corresponding ngsfilter file (please refer to [this page](https://pythonhosted.org/OBITools/scripts/ngsfilter.html) to build this file)
 
 They should be named as follows: `prefix_R1.fastq`, `prefix_R2.fastq`, `prefix_ngsfilter.tab`
 
