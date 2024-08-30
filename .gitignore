@@ -2,6 +2,7 @@
 .snakemake
 workflow/.snakemake
 workflow/.snakemake/*
+workflow/report/docs/*
 workflow/*.err
 workflow/*.out
 log/*.log

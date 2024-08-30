@@ -15,9 +15,24 @@ configfile: "../config/config.yaml"
 # GET FINAL OUTPUT(S)
 def get_input_all():
 	if config["tomerge"]:
-		inputfiles=config["resultsfolder"]+config["mergedfile"]+"/"+config["mergedfile"]+"_R1R2_good_demultiplexed_derepl_basicfilt_cl_agg.tab"
+		obioutput=config["resultsfolder"]+config["mergedfile"]+"/"+config["mergedfile"]+"_R1R2_good_demultiplexed_derepl_basicfilt_cl_agg.tab",
+		count_seq1=expand("report/docs/{run}_count_seq1.tsv", run=config["fastqfiles"]),
+		count_seq2=expand("report/docs/"+config["mergedfile"]+"_count_seq2.tsv", run=config["fastqfiles"]),
+		count_seq1_all_libs="report/docs/all_libs_count_seq1.tsv",
+		count_seq2_all_libs="report/docs/all_libs_count_seq2.tsv",
+		rm_report="report/report.html"
+		#rm_report="report/"+config["mergedfile"]+"_report.html"
 	else:
-		inputfiles=expand("{folder}{run}/{run}_R1R2_good_demultiplexed_derepl_basicfilt_cl_agg.tab", run=config["fastqfiles"], folder=config["resultsfolder"])
+		obioutput=expand("{folder}{run}/{run}_R1R2_good_demultiplexed_derepl_basicfilt_cl_agg.tab", run=config["fastqfiles"], folder=config["resultsfolder"]),
+		count_seq1=expand("report/docs/{run}_count_seq1.tsv", run=config["fastqfiles"]),
+		count_seq2=expand("report/docs/{run}_count_seq2.tsv", run=config["fastqfiles"]),
+		count_seq1_all_libs="report/docs/all_libs_count_seq1.tsv",
+		count_seq2_all_libs="report/docs/all_libs_count_seq2.tsv",
+		rm_report="report/report.html"
+		#rm_report=expand("report/{run}_report.html", run=config["fastqfiles"])
+
+	inputfiles=[obioutput,count_seq1,count_seq2,count_seq1_all_libs,count_seq2_all_libs,rm_report]
+
 	return inputfiles
 
 
@@ -25,6 +40,7 @@ def get_input_all():
 rule all:
 	input:
 		get_input_all()
+
 
 
 # SPLIT FASTQ
@@ -68,10 +84,6 @@ rule pairing:
 def aggregate_R1R2(wildcards):
 	checkpoint_output=checkpoints.split_fastq.get(**wildcards).output[0]
 	file_names=temp(expand(config["resultsfolder"]+"{{run}}/splitted_fastq/{{run}}_R1R2_{n}.fastq", n=glob_wildcards(os.path.join(checkpoint_output, "{run}_R1_{n}.fastq")).n))
-	# print('in_def_aggregate_R1R2')
-	# print(checkpoint_output)
-	# print(glob_wildcards(os.path.join(checkpoint_output, "{run}_R1_{n}.fastq")).n)
-	# print(file_names)
 	return file_names
 	
 
@@ -191,10 +203,6 @@ rule derepl:
 def aggregate_derepl(wildcards):
         checkpoint_output=checkpoints.split_fasta.get(**wildcards).output[0]
         file_names=expand(folder_prefix2+"uniq/tmp_uniq{t}.fasta", t=glob_wildcards(os.path.join(checkpoint_output, "tmp{t}.fasta")).t)
-	# print('in_def_aggregate_derepl')
-	# print(checkpoint_output)
-	# print(glob_wildcards(os.path.join(checkpoint_output, "tmp{t}.fasta")).t)
-	# print(file_names)
         return file_names
 
 
@@ -284,3 +292,94 @@ rule tab_format:
 		"""
 		obitab -n NA -d -o {input} > {output} 2> {log}
 		"""
+
+# REPORT RULES
+
+# COUNT SEQUENCES PRE-MERGING
+rule count_seq1:
+	input:
+		R1=config["resourcesfolder"]+"{run}/{run}_R1.fastq",
+		R2=config["resourcesfolder"]+"{run}/{run}_R2.fastq",
+		R1R2=config["resultsfolder"]+"{run}/{run}_R1R2.fastq",
+		good=config["resultsfolder"]+"{run}/{run}_R1R2_good.fastq",
+		bad=config["resultsfolder"]+"{run}/{run}_R1R2_bad.fastq",
+		demult=config["resultsfolder"]+"{run}/{run}_R1R2_good_demultiplexed.fasta",
+		unass=config["resultsfolder"]+"{run}/{run}_R1R2_good_unassigned.fasta"
+	output:
+		tab1="report/docs/{run}_count_seq1.tsv"
+	params:
+		lib_name="{run}"
+	conda:
+		"envs/stats.yaml"
+	script:
+		"scripts/count_seq.py"
+
+
+# CONCATENATE COUNT FILES
+rule merge_count_seq1:
+	input:
+		expand("report/docs/{run}_count_seq1.tsv", run=config["fastqfiles"])
+	output:
+		"report/docs/all_libs_count_seq1.tsv"
+	shell:
+		"""
+		cat {input} > {output}
+		"""
+
+
+# COUNT SEQUENCES POST-MERGING
+rule count_seq2:
+	input:
+		derepl=folder_prefix+files_prefix+"_R1R2_good_demultiplexed_derepl.fasta",
+		filt=folder_prefix+files_prefix+"_R1R2_good_demultiplexed_derepl_basicfilt.fasta",
+		clust=folder_prefix+files_prefix+"_R1R2_good_demultiplexed_derepl_basicfilt_cl_agg.fasta"
+	params:
+		lib_name=files_prefix
+	output:
+		tab2="report/docs/"+files_prefix+"_count_seq2.tsv"
+	conda:
+		"envs/stats.yaml"
+	script:
+		"scripts/count_seq2.py"
+
+
+if config["tomerge"]:
+	rule merge_count_seq2:
+		input:
+			"report/docs/"+config["mergedfile"]+"_count_seq2.tsv"
+		output:
+			"report/docs/all_libs_count_seq2.tsv"
+		shell:
+			"""
+			cp {input} {output}
+			"""
+else:
+	rule merge_count_seq2:
+		input:
+			expand("report/docs/{run}_count_seq2.tsv", run=config["fastqfiles"])
+		output:
+			"report/docs/all_libs_count_seq2.tsv"
+		shell:
+			"""
+			cat {input} > {output}
+			"""
+
+
+# RMARKDOWN REPORT
+rule rmarkdown:
+	input:
+		countseq1="report/docs/all_libs_count_seq1.tsv",
+		countseq2="report/docs/all_libs_count_seq2.tsv"
+	output:
+		"report/report.html"
+	params:
+		rmd="scripts/report.Rmd",
+		html="report.html",
+		outdir="report",
+		minlength=config["basicfilt"]["minlength"],
+		mincount=config["basicfilt"]["mincount"],
+		minsim=config["clustering"]["minsim"]
+	conda:
+		"envs/rmarkdown.yaml"
+	shell:
+        	"Rscript -e \"rmarkdown::render(input = '{params.rmd}', output_file = '{params.html}', output_dir = '{params.outdir}', params = list(countseq1 = '{input.countseq1}', countseq2 = '{input.countseq2}', minlength = '{params.minlength}', mincount = '{params.mincount}', minsim = '{params.minsim}'))\""

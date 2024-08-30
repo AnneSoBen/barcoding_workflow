@@ -1,0 +1,47 @@
+---
+title: "obitools workflow: report"
+date: "`r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  html_document:
+    keep_md: true
+params:
+  countseq1: "x"
+  countseq2: "x"
+  minlength: "x"
+  mincount: "x"
+  minsim: "x"
+bibliography: biblio.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Bioinformatic analysis
+
+Sequence analysis was performed using the `OBITools` v1.2.11 [@boyer2016] and the `sumaclust` [@mercier2013] softwares, through the Snakemake [@molder2021] pipeline of [@anne_sophie_benoiston_2022_6676578]. Forward and reverse reads were aligned with the `illuminapairedend` command. Alignments with a score below 40 were filtered out. Sequences were then assigned to samples using the `ngsfilter` command, allowing 0 and 2 errors on the tags and primers respectively. Identical sequences were merged with the `obiuniq` command. Next, low quality sequences were filtered out, i.e. sequences with less than `r params$mincount` read in the whole dataset, sequences containing ambiguous bases or that are shorter than expected (<`r params$minlength`bp). The remaining sequences were clustered into Molecular Operational Taxonomic Units (MOTUs) with `sumaclust` using a similarity threshold of `r params$minsim*100`%. The most abundant sequence of each MOTU was considered as its representative sequence and its abundance corresponded to the sum of the abundance of its members. The fasta file resulting from these analysis steps was converted to a tabular file containing MOTUs abundances in PCR replicates.
+
+For more information on the pipeline, please visit [this page](https://github.com/AnneSoBen/obitools_workflow).
+
+# Statistics
+
+The following tables summarize the number of sequences at each step of the pipeline.\\
+
+good ali = alignments with score > 40; bad ali = alignments with score <= 40; demultiplexed = sequences assigned to one or several samples (2 errors allowed on primers, 0 on barcodes), unassigned = sequences unassigned to a sample.
+
+The percentage good/bad alignments are computed compared to the number of aligned reads. The percentage of demultiplexed/unassigned sequences are computed compared to the number of "good ali" sequences. The percentage of filtered sequences at the "basicfilt" step are computed compared to the number of dereplicated sequences.
+
+```{r}
+params$countseq1
+myfile <- read.csv2(params$countseq1, sep = "\t", header = TRUE)
+
+knitr::kable(myfile)
+
+params$countseq2
+myfile <- read.csv2(params$countseq2, sep = "\t", header = TRUE)
+
+knitr::kable(myfile)
+```
+
+# References
