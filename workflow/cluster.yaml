@@ -3,16 +3,16 @@ __default__:
   cpus: 1
 
 split_fastq:
-  mem: 100M
+  mem: 500M
 
 pairing:
-  mem: 100M
+  mem: 500M
 
 derepl:
   mem: 8G
 
 split_fasta:
-  mem: 100M
+  mem: 500M
 
 clustering:
   cpus: 8
