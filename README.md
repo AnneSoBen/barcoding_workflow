@@ -1,6 +1,7 @@
-# OBITools workflow
+# Barcoding workflow
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6676577.svg)](https://doi.org/10.5281/zenodo.6676577)
+:bangbang: THIS WORKFLOW IS A COPY OF THE [obitools_workflow](https://github.com/AnneSoBen/obitools_workflow.git) REPOSITORY, MODIFIED TO ANALYZE BARCODING DATA PRODUCED WITH NGS TECHNOLOGIES.
+There is only a slight modification: a tabular file is produced from the dereplicated file, to allow users having the abundances of all distinct sequences.
 
 <!-- TABLE OF CONTENTS -->
 <details>
