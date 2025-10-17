@@ -14,6 +14,9 @@ derepl:
 split_fasta:
   mem: 500M
 
+tab_format_derepl: 
+  mem: 2G 
+
 clustering:
   cpus: 8
   mem: 8G
